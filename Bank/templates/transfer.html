@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+
+{% block title %}Funds Transfer — SecureBank{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Direct Funds Transfer</h1>
+    <p class="page-subtitle">Instant intra-bank electronic settlement to another SecureBank account holder</p>
+</div>
+
+<div class="grid-2" id="transferContainer" data-account="{{ account_number }}" data-balance="{{ account.balance }}">
+    <!-- Transfer Form Card -->
+    <div class="card transfer-form-card">
+        <div class="card-header">
+            <div class="card-title">
+                <i class="fa-solid fa-paper-plane" style="color: var(--brand-accent-light);"></i>
+                Transfer Details
+            </div>
+            <div style="font-size: 12px; color: var(--text-muted);">
+                Available: <strong class="mono" style="color: var(--success);">₹ {{ "{:,.2f}".format(account.balance) }}</strong>
+            </div>
+        </div>
+        <div class="card-body">
+            <form id="transferForm" onsubmit="handleTransferSubmit(event)">
+                <div class="form-group">
+                    <label class="form-label" for="transferReceiver">Beneficiary Account Number</label>
+                    <div style="position: relative;">
+                        <input 
+                            type="text" 
+                            id="transferReceiver" 
+                            class="form-input" 
+                            placeholder="6-digit destination account" 
+                            maxlength="6" 
+                            pattern="\d{6}" 
+                            required 
+                            autofocus
+                        >
+                        <i class="fa-solid fa-user-check" style="position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted);"></i>
+                    </div>
+                    <div class="form-hint">Must be an active 6-digit SecureBank account number.</div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="transferAmount">Transfer Amount (₹)</label>
+                    <div class="amount-input-wrapper">
+                        <span class="currency-symbol">₹</span>
+                        <input 
+                            type="number" 
+                            step="0.01" 
+                            min="1" 
+                            id="transferAmount" 
+                            class="form-input" 
+                            placeholder="0.00" 
+                            required
+                        >
+                    </div>
+                    <div class="form-hint" style="display: flex; justify-content: space-between;">
+                        <span>Min: ₹1.00</span>
+                        <span>Max Available: ₹{{ "{:,.2f}".format(account.balance) }}</span>
+                    </div>
+                </div>
+
+                <div style="margin: 24px 0; padding: 14px; background: rgba(37, 99, 235, 0.06); border: 1px solid var(--border-accent); border-radius: var(--radius-sm); font-size: 12px; color: var(--text-secondary); line-height: 1.5;">
+                    <i class="fa-solid fa-shield-halved" style="color: var(--brand-accent-light); margin-right: 6px;"></i>
+                    <strong>Settlement Guarantee:</strong> Transfers are settled in real-time. Please double-check the recipient account number before submitting.
+                </div>
+
+                <button type="submit" class="btn btn-primary" id="transferSubmitBtn" style="height: 48px;">
+                    <span id="transferBtnText"><i class="fa-solid fa-paper-plane" style="margin-right: 8px;"></i> Authorize & Transfer Funds</span>
+                    <div class="spinner" id="transferSpinner" style="display: none;"></div>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Instructions & Security Guidelines -->
+    <div>
+        <div class="card" style="margin-bottom: 20px;">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fa-solid fa-circle-question" style="color: var(--brand-gold);"></i>
+                    Transfer Guidelines
+                </div>
+            </div>
+            <div class="card-body" style="font-size: 13px; color: var(--text-secondary); line-height: 1.7;">
+                <p style="margin-bottom: 12px;">
+                    <strong style="color: var(--text-primary);"><i class="fa-solid fa-bolt" style="color: var(--brand-gold); margin-right: 6px;"></i>Zero Charges:</strong>
+                    Internal ledger transfers between SecureBank accounts incur ₹0.00 fee.
+                </p>
+                <p style="margin-bottom: 12px;">
+                    <strong style="color: var(--text-primary);"><i class="fa-solid fa-ban" style="color: var(--danger); margin-right: 6px;"></i>Self Transfers:</strong>
+                    You cannot wire funds to your own active account number (<strong>#{{ account_number }}</strong>).
+                </p>
+                <p>
+                    <strong style="color: var(--text-primary);"><i class="fa-solid fa-lock" style="color: var(--success); margin-right: 6px;"></i>Audit Trail:</strong>
+                    Both sender and receiver receive an automatic statement timestamp entry.
+                </p>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fa-solid fa-credit-card" style="color: var(--brand-accent-light);"></i>
+                    Debit Source Account
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="info-row">
+                    <div class="info-label">From Account</div>
+                    <div class="info-value mono" style="font-weight: 700;">{{ account_number }}</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Account Holder</div>
+                    <div class="info-value">{{ account.name }}</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Available Balance</div>
+                    <div class="info-value mono" style="color: var(--success); font-weight: 700;">₹ {{ "{:,.2f}".format(account.balance) }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Transfer Success Overlay Modal -->
+<div class="success-overlay" id="transferSuccessOverlay">
+    <div class="success-content">
+        <div class="success-check">
+            <i class="fa-solid fa-check"></i>
+        </div>
+        <h3 class="success-title">Transfer Successful!</h3>
+        <p class="success-message" id="transferSuccessMsg">Funds have been credited to beneficiary account.</p>
+        <div class="success-amount" id="transferSuccessAmount">₹ 0.00</div>
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+            <a href="{{ url_for('dashboard') }}" class="btn btn-primary" style="flex: 1;">
+                Go to Dashboard
+            </a>
+            <a href="{{ url_for('transactions_page') }}" class="btn btn-secondary" style="flex: 1;">
+                View Statement
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const container = document.getElementById('transferContainer');
+    const userAccNum = container ? String(container.getAttribute('data-account') || '') : '';
+    let currentBalance = container ? (parseFloat(container.getAttribute('data-balance')) || 0) : 0;
+
+    async function handleTransferSubmit(e) {
+        e.preventDefault();
+        const receiver = document.getElementById('transferReceiver').value.trim();
+        const amount = parseFloat(document.getElementById('transferAmount').value);
+        const btn = document.getElementById('transferSubmitBtn');
+        const btnText = document.getElementById('transferBtnText');
+        const spinner = document.getElementById('transferSpinner');
+
+        if (receiver.length !== 6 || isNaN(receiver)) {
+            showToast('Please enter a valid 6-digit receiver account number', 'error');
+            return;
+        }
+
+        if (receiver === userAccNum) {
+            showToast('You cannot transfer money to your own account', 'error');
+            return;
+        }
+
+        if (isNaN(amount) || amount <= 0) {
+            showToast('Please enter a valid amount greater than zero', 'error');
+            return;
+        }
+
+        if (amount > currentBalance) {
+            showToast('Insufficient balance for this transaction', 'error');
+            return;
+        }
+
+        btn.disabled = true;
+        btnText.style.display = 'none';
+        spinner.style.display = 'block';
+
+        try {
+            const res = await fetch('/api/transfer', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ receiver, amount })
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                currentBalance = data.balance;
+                if (container) container.setAttribute('data-balance', String(data.balance));
+                document.getElementById('transferSuccessMsg').textContent = `Transferred to Account #${receiver}`;
+                document.getElementById('transferSuccessAmount').textContent = '₹ ' + amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                document.getElementById('transferSuccessOverlay').classList.add('active');
+            } else {
+                showToast(data.message || 'Transfer failed. Please check account details.', 'error');
+            }
+        } catch (err) {
+            showToast('Network error processing transfer. Please verify status before retrying.', 'error');
+        } finally {
+            btn.disabled = false;
+            btnText.style.display = 'inline-flex';
+            spinner.style.display = 'none';
+        }
+    }
+</script>
+{% endblock %}

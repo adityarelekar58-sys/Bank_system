@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SecureBank Online Portal{% endblock %}</title>
+    <!-- Stylesheets (dual supported for both server and local preview) -->
+    <link rel="stylesheet" href="../static/css/style.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <!-- Mobile Header -->
+    <header class="mobile-header">
+        <div class="sidebar-brand">
+            <div class="sidebar-brand-icon">
+                <i class="fa-solid fa-building-columns"></i>
+            </div>
+            <span class="sidebar-brand-text">SECURE<span>BANK</span></span>
+        </div>
+        <button class="hamburger" id="mobileMenuBtn" aria-label="Toggle navigation">
+            <i class="fa-solid fa-bars"></i>
+        </button>
+    </header>
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <div class="app-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-brand">
+                    <div class="sidebar-brand-icon">
+                        <i class="fa-solid fa-building-columns"></i>
+                    </div>
+                    <div>
+                        <div class="sidebar-brand-text">SECURE<span>BANK</span></div>
+                        <div style="font-size: 10px; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase;">Retail Banking</div>
+                    </div>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="nav-section-label">Account Services</div>
+                <a href="{{ url_for('dashboard') }}" class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}">
+                    <span class="nav-link-icon"><i class="fa-solid fa-gauge-high"></i></span>
+                    <span>Dashboard</span>
+                </a>
+                <a href="{{ url_for('transactions_page') }}" class="nav-link {% if request.endpoint == 'transactions_page' %}active{% endif %}">
+                    <span class="nav-link-icon"><i class="fa-solid fa-clock-rotate-left"></i></span>
+                    <span>Statement & History</span>
+                </a>
+                <a href="{{ url_for('transfer_page') }}" class="nav-link {% if request.endpoint == 'transfer_page' %}active{% endif %}">
+                    <span class="nav-link-icon"><i class="fa-solid fa-arrow-right-arrow-left"></i></span>
+                    <span>Funds Transfer</span>
+                </a>
+
+                <div class="nav-section-label" style="margin-top: 14px;">Administration</div>
+                <a href="{{ url_for('settings_page') }}" class="nav-link {% if request.endpoint == 'settings_page' %}active{% endif %}">
+                    <span class="nav-link-icon"><i class="fa-solid fa-shield-halved"></i></span>
+                    <span>Security & PIN</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="sidebar-user">
+                    <div class="user-avatar">
+                        <i class="fa-solid fa-user-shield"></i>
+                    </div>
+                    <div class="user-info">
+                        <div class="user-name">{{ account.name if account else 'Account Holder' }}</div>
+                        <div class="user-account">A/C: {{ account_number if account_number else '------' }}</div>
+                    </div>
+                    <button class="btn-ghost btn-icon" id="logoutBtn" title="Secure Logout" style="color: var(--danger);">
+                        <i class="fa-solid fa-power-off"></i>
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Body -->
+        <main class="main-content page-enter">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <!-- Quick Deposit Modal -->
+    <div class="modal-overlay" id="depositModal">
+        <div class="modal">
+            <h3 class="modal-title"><i class="fa-solid fa-circle-arrow-down" style="color: var(--success); margin-right: 8px;"></i> Deposit Funds</h3>
+            <p class="modal-subtitle">Instant credit to Account #<strong class="mono">{{ account_number }}</strong></p>
+            <form id="depositForm" onsubmit="handleDeposit(event)">
+                <div class="form-group">
+                    <label class="form-label" for="depositAmount">Deposit Amount (₹)</label>
+                    <div class="amount-input-wrapper">
+                        <span class="currency-symbol">₹</span>
+                        <input type="number" step="0.01" min="1" id="depositAmount" class="form-input" placeholder="0.00" required>
+                    </div>
+                    <div class="form-hint">Maximum per-transaction deposit: ₹5,00,000.00</div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('depositModal')">Cancel</button>
+                    <button type="submit" class="btn btn-success" id="depositSubmitBtn">
+                        <span>Confirm Deposit</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Quick Withdraw Modal -->
+    <div class="modal-overlay" id="withdrawModal">
+        <div class="modal">
+            <h3 class="modal-title"><i class="fa-solid fa-circle-arrow-up" style="color: var(--danger); margin-right: 8px;"></i> Cash Withdrawal</h3>
+            <p class="modal-subtitle">Deduct from Account #<strong class="mono">{{ account_number }}</strong></p>
+            <form id="withdrawForm" onsubmit="handleWithdraw(event)">
+                <div class="form-group">
+                    <label class="form-label" for="withdrawAmount">Withdrawal Amount (₹)</label>
+                    <div class="amount-input-wrapper">
+                        <span class="currency-symbol">₹</span>
+                        <input type="number" step="0.01" min="1" id="withdrawAmount" class="form-input" placeholder="0.00" required>
+                    </div>
+                    <div class="form-hint">Available balance will be verified before release.</div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('withdrawModal')">Cancel</button>
+                    <button type="submit" class="btn btn-danger" id="withdrawSubmitBtn">
+                        <span>Authorize Withdrawal</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Global Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

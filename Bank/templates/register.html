@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Open New Account — SecureBank</title>
+    <link rel="stylesheet" href="../static/css/style.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+    <div class="auth-layout">
+        <!-- Left: Requirements & Benefits -->
+        <div class="auth-showcase">
+            <div class="showcase-content">
+                <div class="brand-logo">
+                    <div class="brand-icon">
+                        <i class="fa-solid fa-building-columns"></i>
+                    </div>
+                    <div class="brand-name">SECURE<span>BANK</span></div>
+                </div>
+
+                <h1 class="showcase-heading">Open a Digital Savings Account</h1>
+                <p class="showcase-subtitle">
+                    Instant onboarding in under 60 seconds. Zero paperwork, zero minimum initial balance requirement.
+                </p>
+
+                <div class="showcase-features">
+                    <div class="feature-item">
+                        <div class="feature-icon blue">
+                            <i class="fa-solid fa-id-badge"></i>
+                        </div>
+                        <div class="feature-text">
+                            <strong>Instant Account Generation</strong>
+                            Receive an official 6-digit digital account number immediately upon verification.
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon green">
+                            <i class="fa-solid fa-piggy-bank"></i>
+                        </div>
+                        <div class="feature-text">
+                            <strong>Zero Minimum Balance</strong>
+                            Start with ₹0.00 balance and fund your account anytime using instant deposits.
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon gold">
+                            <i class="fa-solid fa-lock"></i>
+                        </div>
+                        <div class="feature-text">
+                            <strong>Encrypted Security PIN</strong>
+                            Set your confidential 4-digit PIN for ATM and online transfers.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Registration Form -->
+        <div class="auth-form-panel">
+            <div class="auth-form-container">
+                <div style="margin-bottom: 24px;">
+                    <a href="{{ url_for('index') }}" style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
+                        <i class="fa-solid fa-arrow-left"></i> Home
+                    </a>
+                    <h2 class="auth-form-title">Account Registration</h2>
+                    <p class="auth-form-subtitle">Enter your primary holder details</p>
+                </div>
+
+                <form id="registerForm" onsubmit="handleRegisterSubmit(event)">
+                    <div class="form-group">
+                        <label class="form-label" for="regName">Full Legal Name</label>
+                        <input 
+                            type="text" 
+                            id="regName" 
+                            class="form-input" 
+                            placeholder="e.g. Rahul Sharma" 
+                            required 
+                            autofocus
+                        >
+                        <div class="form-hint">Matches your official identification document</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="regPhone">Mobile Phone Number</label>
+                        <input 
+                            type="tel" 
+                            id="regPhone" 
+                            class="form-input" 
+                            placeholder="e.g. 9876543210" 
+                            maxlength="15" 
+                            required
+                        >
+                        <div class="form-hint">Registered number for transaction alerts</div>
+                    </div>
+
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label class="form-label" for="regPin">4-Digit PIN</label>
+                            <input 
+                                type="password" 
+                                id="regPin" 
+                                class="form-input mono" 
+                                placeholder="••••" 
+                                maxlength="4" 
+                                pattern="\d{4}" 
+                                required
+                            >
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="regPinConfirm">Confirm PIN</label>
+                            <input 
+                                type="password" 
+                                id="regPinConfirm" 
+                                class="form-input mono" 
+                                placeholder="••••" 
+                                maxlength="4" 
+                                pattern="\d{4}" 
+                                required
+                            >
+                        </div>
+                    </div>
+                    <div class="form-hint" style="margin-top: -12px; margin-bottom: 16px;">Must contain exactly 4 numeric digits.</div>
+
+                    <button type="submit" class="btn btn-primary" id="regSubmitBtn" style="height: 46px;">
+                        <span id="regBtnText"><i class="fa-solid fa-check-circle" style="margin-right: 6px;"></i> Create My Account</span>
+                        <div class="spinner" id="regSpinner" style="display: none;"></div>
+                    </button>
+                </form>
+
+                <div class="auth-switch">
+                    Already registered? 
+                    <a href="{{ url_for('login_page') }}">Sign In to NetBanking</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal with Generated Account Number -->
+    <div class="modal-overlay" id="accountCreatedModal">
+        <div class="modal" style="text-align: center; max-width: 460px;">
+            <div style="width: 60px; height: 60px; margin: 0 auto 16px; border-radius: 50%; background: var(--success-bg); display: flex; align-items: center; justify-content: center; font-size: 28px; color: var(--success);">
+                <i class="fa-solid fa-check"></i>
+            </div>
+            <h3 class="modal-title">Account Created Successfully!</h3>
+            <p class="modal-subtitle">Your new digital banking account is activated and ready for use.</p>
+
+            <div style="margin: 20px 0; padding: 20px; background: var(--surface-input); border: 1px dashed var(--border-gold); border-radius: var(--radius-md);">
+                <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted);">Assigned Account Number</div>
+                <div id="newAccNumDisplay" class="mono" style="font-size: 32px; font-weight: 800; color: var(--brand-gold); letter-spacing: 4px; margin: 8px 0;">------</div>
+                <div style="font-size: 12px; color: var(--text-secondary);">
+                    <i class="fa-solid fa-triangle-exclamation" style="color: var(--warning); margin-right: 4px;"></i>
+                    Please save this 6-digit number. You will need it along with your 4-digit PIN to sign in.
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+                <button type="button" class="btn btn-secondary" onclick="copyAccountNumber()" id="copyBtn">
+                    <i class="fa-regular fa-copy"></i> Copy
+                </button>
+                <a href="{{ url_for('login_page') }}" class="btn btn-primary" style="flex: 2;">
+                    Proceed to Login <i class="fa-solid fa-arrow-right" style="margin-left: 6px;"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container" id="toastContainer"></div>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    <script>
+        let generatedAccount = '';
+
+        async function handleRegisterSubmit(e) {
+            e.preventDefault();
+            const name = document.getElementById('regName').value.trim();
+            const phone = document.getElementById('regPhone').value.trim();
+            const pin = document.getElementById('regPin').value.trim();
+            const confirmPin = document.getElementById('regPinConfirm').value.trim();
+
+            if (!name || !phone) {
+                showToast('Please fill out all required fields', 'error');
+                return;
+            }
+            if (pin.length !== 4 || isNaN(pin)) {
+                showToast('PIN must be exactly 4 numeric digits', 'error');
+                return;
+            }
+            if (pin !== confirmPin) {
+                showToast('PIN confirmation does not match', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('regSubmitBtn');
+            const btnText = document.getElementById('regBtnText');
+            const spinner = document.getElementById('regSpinner');
+
+            btn.disabled = true;
+            btnText.style.display = 'none';
+            spinner.style.display = 'block';
+
+            try {
+                const response = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, phone, pin })
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    generatedAccount = data.account_number;
+                    document.getElementById('newAccNumDisplay').textContent = generatedAccount;
+                    openModal('accountCreatedModal');
+                } else {
+                    showToast(data.message || 'Account creation failed.', 'error');
+                }
+            } catch (err) {
+                showToast('Server connection error. Please try again.', 'error');
+            } finally {
+                btn.disabled = false;
+                btnText.style.display = 'inline-flex';
+                spinner.style.display = 'none';
+            }
+        }
+
+        function copyAccountNumber() {
+            if (!generatedAccount) return;
+            navigator.clipboard.writeText(generatedAccount.toString()).then(() => {
+                const btn = document.getElementById('copyBtn');
+                btn.innerHTML = '<i class="fa-solid fa-check"></i> Copied!';
+                setTimeout(() => {
+                    btn.innerHTML = '<i class="fa-regular fa-copy"></i> Copy';
+                }, 2000);
+                showToast('Account number copied to clipboard', 'info');
+            });
+        }
+    </script>
+</body>
+</html>

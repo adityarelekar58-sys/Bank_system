@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+
+{% block title %}Account Statement & Transactions — SecureBank{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px;">
+    <div>
+        <h1 class="page-title">Statement & Transaction History</h1>
+        <p class="page-subtitle">Detailed ledger entries for Account #<span class="mono" style="color: var(--brand-gold);">{{ account_number }}</span></p>
+    </div>
+    <div style="display: flex; gap: 10px;">
+        <button class="btn btn-secondary" onclick="window.print()">
+            <i class="fa-solid fa-print"></i> Print Statement
+        </button>
+    </div>
+</div>
+
+<!-- Stats Row for Financial Summary -->
+<div class="stats-row">
+    <div class="stat-card accent">
+        <div class="stat-label">Current Ledger Balance</div>
+        <div class="stat-value accent">₹ {{ "{:,.2f}".format(account.balance) }}</div>
+        <div class="stat-sub">Available for withdrawal / transfers</div>
+    </div>
+
+    <div class="stat-card success">
+        <div class="stat-label">Total Credits (Inflow)</div>
+        <div class="stat-value success" id="totalCreditsDisplay">₹ 0.00</div>
+        <div class="stat-sub">Deposits & incoming transfers</div>
+    </div>
+
+    <div class="stat-card gold">
+        <div class="stat-label">Total Debits (Outflow)</div>
+        <div class="stat-value" style="color: var(--danger);" id="totalDebitsDisplay">₹ 0.00</div>
+        <div class="stat-sub">Withdrawals & outgoing transfers</div>
+    </div>
+</div>
+
+<!-- Statement Table Card -->
+<div class="card">
+    <div class="card-header" style="flex-wrap: wrap; gap: 12px;">
+        <!-- Filters -->
+        <div style="display: flex; gap: 8px;">
+            <button class="btn btn-primary" id="filterAllBtn" onclick="filterTransactions('all')" style="padding: 6px 14px; font-size: 13px; width: auto;">
+                All (<span id="countAll">{{ account.transactions|length }}</span>)
+            </button>
+            <button class="btn btn-secondary" id="filterCreditBtn" onclick="filterTransactions('credit')" style="padding: 6px 14px; font-size: 13px;">
+                <i class="fa-solid fa-arrow-down-left" style="color: var(--success); margin-right: 4px;"></i> Credits
+            </button>
+            <button class="btn btn-secondary" id="filterDebitBtn" onclick="filterTransactions('debit')" style="padding: 6px 14px; font-size: 13px;">
+                <i class="fa-solid fa-arrow-up-right" style="color: var(--danger); margin-right: 4px;"></i> Debits
+            </button>
+        </div>
+
+        <!-- Search Input -->
+        <div style="position: relative; min-width: 240px;">
+            <input 
+                type="text" 
+                id="searchTxnInput" 
+                class="form-input" 
+                placeholder="Search transactions..." 
+                oninput="searchTransactions(this.value)"
+                style="padding: 8px 12px 8px 32px; font-size: 13px;"
+            >
+            <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 12px;"></i>
+        </div>
+    </div>
+
+    <div class="card-body" style="padding: 0;">
+        <ul class="txn-list" id="transactionListContainer">
+            {% if account.transactions and account.transactions|length > 0 %}
+                {% for txn in account.transactions %}
+                    <li class="txn-item" data-type="{{ txn.type }}" data-desc="{{ txn.description|lower }}" data-amount="{{ txn.amount }}">
+                        <div class="txn-icon {{ txn.type }}">
+                            {% if txn.type == 'credit' %}
+                                <i class="fa-solid fa-arrow-down-left"></i>
+                            {% else %}
+                                <i class="fa-solid fa-arrow-up-right"></i>
+                            {% endif %}
+                        </div>
+                        <div class="txn-details">
+                            <div class="txn-desc">{{ txn.description }}</div>
+                            <div class="txn-time"><i class="fa-regular fa-calendar-check" style="margin-right: 4px;"></i>{{ txn.time }}</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div class="txn-amount {{ txn.type }}">
+                                {{ '+' if txn.type == 'credit' else '-' }}₹{{ "{:,.2f}".format(txn.amount) }}
+                            </div>
+                            <div class="txn-balance">Ledger Bal: ₹{{ "{:,.2f}".format(txn.balance_after) }}</div>
+                        </div>
+                    </li>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state" id="noTxnState">
+                    <div class="empty-state-icon"><i class="fa-solid fa-clock-rotate-left"></i></div>
+                    <div class="empty-state-text">No Transactions on File</div>
+                    <div class="empty-state-sub">Any cash deposits, ATM withdrawals, or transfers will appear here chronologically.</div>
+                </div>
+            {% endif %}
+        </ul>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        calculateTotals();
+    });
+
+    function calculateTotals() {
+        let totalCredit = 0;
+        let totalDebit = 0;
+        const items = document.querySelectorAll('#transactionListContainer .txn-item');
+        items.forEach(item => {
+            const type = item.getAttribute('data-type');
+            const amount = parseFloat(item.getAttribute('data-amount')) || 0;
+            if (type === 'credit') {
+                totalCredit += amount;
+            } else if (type === 'debit') {
+                totalDebit += amount;
+            }
+        });
+
+        document.getElementById('totalCreditsDisplay').textContent = '₹ ' + totalCredit.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        document.getElementById('totalDebitsDisplay').textContent = '₹ ' + totalDebit.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    let activeFilter = 'all';
+
+    function filterTransactions(type) {
+        activeFilter = type;
+        const items = document.querySelectorAll('#transactionListContainer .txn-item');
+        const allBtn = document.getElementById('filterAllBtn');
+        const creditBtn = document.getElementById('filterCreditBtn');
+        const debitBtn = document.getElementById('filterDebitBtn');
+
+        [allBtn, creditBtn, debitBtn].forEach(b => {
+            b.classList.remove('btn-primary');
+            b.classList.add('btn-secondary');
+        });
+
+        if (type === 'all') allBtn.classList.replace('btn-secondary', 'btn-primary');
+        if (type === 'credit') creditBtn.classList.replace('btn-secondary', 'btn-primary');
+        if (type === 'debit') debitBtn.classList.replace('btn-secondary', 'btn-primary');
+
+        const searchVal = document.getElementById('searchTxnInput').value.toLowerCase().trim();
+
+        items.forEach(item => {
+            const itemType = item.getAttribute('data-type');
+            const itemDesc = item.getAttribute('data-desc');
+            const matchesType = (type === 'all' || itemType === type);
+            const matchesSearch = !searchVal || itemDesc.includes(searchVal);
+
+            item.style.display = (matchesType && matchesSearch) ? 'flex' : 'none';
+        });
+    }
+
+    function searchTransactions(query) {
+        const q = query.toLowerCase().trim();
+        const items = document.querySelectorAll('#transactionListContainer .txn-item');
+        items.forEach(item => {
+            const itemType = item.getAttribute('data-type');
+            const itemDesc = item.getAttribute('data-desc');
+            const matchesType = (activeFilter === 'all' || itemType === activeFilter);
+            const matchesSearch = !q || itemDesc.includes(q);
+
+            item.style.display = (matchesType && matchesSearch) ? 'flex' : 'none';
+        });
+    }
+</script>
+{% endblock %}

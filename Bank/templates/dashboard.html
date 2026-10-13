@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+
+{% block title %}Account Overview — SecureBank Portal{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px;">
+    <div>
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+            <span style="font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: var(--radius-full); background: var(--success-bg); color: var(--success); display: inline-flex; align-items: center; gap: 4px;">
+                <i class="fa-solid fa-circle" style="font-size: 6px;"></i> Active Account
+            </span>
+            <span style="font-size: 13px; color: var(--text-muted);">Last updated just now</span>
+        </div>
+        <h1 class="page-title">Welcome back, {{ account.name }}</h1>
+        <p class="page-subtitle">Personal Savings Account &bull; Verified Digital Banking</p>
+    </div>
+    <div>
+        <button class="btn btn-secondary" onclick="refreshDashboardBalance()" id="refreshBtn" title="Sync live ledger">
+            <i class="fa-solid fa-arrows-rotate" id="refreshIcon"></i> Sync Balance
+        </button>
+    </div>
+</div>
+
+<!-- Primary Account Balance Card -->
+<div class="balance-hero">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; position: relative; z-index: 2;">
+        <div>
+            <div class="balance-label">Total Available Balance</div>
+            <div style="display: flex; align-items: baseline; gap: 16px;">
+                <div class="balance-amount" id="balanceAmountDisplay" data-balance="{{ account.balance }}">
+                    ₹ {{ "{:,.2f}".format(account.balance) }}
+                </div>
+                <button type="button" class="btn-ghost" onclick="toggleBalanceMask()" id="maskToggleBtn" style="padding: 4px 8px; font-size: 14px;" title="Hide/Unhide balance">
+                    <i class="fa-solid fa-eye" id="maskToggleIcon"></i>
+                </button>
+            </div>
+            <div class="balance-account">
+                Account Number: <strong class="mono" id="heroAccNum">{{ account_number }}</strong>
+                <button type="button" class="btn-ghost" onclick="copyHeroAccountNumber()" style="padding: 2px 6px; font-size: 11px; margin-left: 6px;" title="Copy Account Number">
+                    <i class="fa-regular fa-copy"></i>
+                </button>
+            </div>
+        </div>
+        <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end;">
+            <div style="width: 48px; height: 32px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 16px; color: var(--brand-gold);">
+                <i class="fa-brands fa-cc-mastercard"></i>
+            </div>
+            <span style="font-size: 11px; color: var(--text-muted); margin-top: 6px; font-family: 'JetBrains Mono', monospace;">SAVINGS PLATINUM</span>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Action Operations -->
+<div class="quick-actions">
+    <div class="action-card" onclick="openModal('depositModal')">
+        <div class="action-icon green">
+            <i class="fa-solid fa-arrow-down-to-line"></i>
+        </div>
+        <div class="action-title">Deposit Funds</div>
+        <div class="action-desc">Add balance instantly</div>
+    </div>
+
+    <div class="action-card" onclick="openModal('withdrawModal')">
+        <div class="action-icon red">
+            <i class="fa-solid fa-arrow-up-from-bracket"></i>
+        </div>
+        <div class="action-title">Withdraw Cash</div>
+        <div class="action-desc">Immediate deduction</div>
+    </div>
+
+    <a href="{{ url_for('transfer_page') }}" class="action-card">
+        <div class="action-icon blue">
+            <i class="fa-solid fa-paper-plane"></i>
+        </div>
+        <div class="action-title">Transfer Money</div>
+        <div class="action-desc">Direct account wire</div>
+    </a>
+
+    <a href="{{ url_for('transactions_page') }}" class="action-card">
+        <div class="action-icon gold">
+            <i class="fa-solid fa-file-invoice"></i>
+        </div>
+        <div class="action-title">Account Statement</div>
+        <div class="action-desc">Audit & past entries</div>
+    </a>
+</div>
+
+<!-- Recent Transactions & Snapshot Grid -->
+<div class="grid-2">
+    <!-- Recent Transactions List -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">
+                <i class="fa-solid fa-list-check" style="color: var(--brand-accent-light);"></i>
+                Recent Activity
+            </div>
+            <a href="{{ url_for('transactions_page') }}" style="font-size: 12px; color: var(--brand-accent-light); font-weight: 600;">
+                View All <i class="fa-solid fa-chevron-right" style="font-size: 10px;"></i>
+            </a>
+        </div>
+        <div class="card-body" style="padding: 0;">
+            <ul class="txn-list" id="dashboardTxnList">
+                {% if account.transactions and account.transactions|length > 0 %}
+                    {% for txn in account.transactions[:5] %}
+                        <li class="txn-item">
+                            <div class="txn-icon {{ txn.type }}">
+                                {% if txn.type == 'credit' %}
+                                    <i class="fa-solid fa-arrow-down-left"></i>
+                                {% else %}
+                                    <i class="fa-solid fa-arrow-up-right"></i>
+                                {% endif %}
+                            </div>
+                            <div class="txn-details">
+                                <div class="txn-desc">{{ txn.description }}</div>
+                                <div class="txn-time"><i class="fa-regular fa-clock" style="margin-right: 4px;"></i>{{ txn.time }}</div>
+                            </div>
+                            <div>
+                                <div class="txn-amount {{ txn.type }}">
+                                    {{ '+' if txn.type == 'credit' else '-' }}₹{{ "{:,.2f}".format(txn.amount) }}
+                                </div>
+                                <div class="txn-balance">Bal: ₹{{ "{:,.2f}".format(txn.balance_after) }}</div>
+                            </div>
+                        </li>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">
+                        <div class="empty-state-icon"><i class="fa-solid fa-receipt"></i></div>
+                        <div class="empty-state-text">No Transactions Recorded</div>
+                        <div class="empty-state-sub">Make your initial deposit or funds transfer to see records here.</div>
+                    </div>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+
+    <!-- Account Details Summary -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">
+                <i class="fa-solid fa-circle-info" style="color: var(--brand-gold);"></i>
+                Account Details & Standing
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="info-row">
+                <div class="info-label">Account Holder</div>
+                <div class="info-value">{{ account.name }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Account Number</div>
+                <div class="info-value mono" style="font-weight: 700; color: var(--brand-gold);">{{ account_number }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Registered Phone</div>
+                <div class="info-value">{{ account.phone }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Account Type</div>
+                <div class="info-value">High-Yield Digital Savings</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Creation Date</div>
+                <div class="info-value">{{ account.created_at if account.created_at else 'Active' }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Transfer Limit</div>
+                <div class="info-value">₹2,00,000 / transaction</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const balDisplay = document.getElementById('balanceAmountDisplay');
+    let rawBalance = balDisplay ? (parseFloat(balDisplay.getAttribute('data-balance')) || 0) : 0;
+    let isMasked = false;
+
+    function toggleBalanceMask() {
+        const display = document.getElementById('balanceAmountDisplay');
+        const icon = document.getElementById('maskToggleIcon');
+        if (!display || !icon) return;
+        isMasked = !isMasked;
+
+        if (isMasked) {
+            display.textContent = '₹ ••••••••';
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        } else {
+            display.textContent = '₹ ' + rawBalance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        }
+    }
+
+    function copyHeroAccountNumber() {
+        const el = document.getElementById('heroAccNum');
+        if (!el) return;
+        const acc = el.textContent.trim();
+        navigator.clipboard.writeText(acc).then(() => {
+            showToast('Account number copied: ' + acc, 'info');
+        });
+    }
+
+    async function refreshDashboardBalance() {
+        const refreshIcon = document.getElementById('refreshIcon');
+        if (refreshIcon) refreshIcon.classList.add('fa-spin');
+
+        try {
+            const res = await fetch('/api/balance');
+            const data = await res.json();
+            if (data.success) {
+                rawBalance = data.balance;
+                const display = document.getElementById('balanceAmountDisplay');
+                if (display) {
+                    display.setAttribute('data-balance', String(data.balance));
+                    if (!isMasked) {
+                        display.textContent = '₹ ' + data.balance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    }
+                }
+                showToast('Balance updated successfully.', 'success');
+            }
+        } catch (e) {
+            showToast('Could not refresh balance.', 'error');
+        } finally {
+            if (refreshIcon) {
+                setTimeout(() => {
+                    refreshIcon.classList.remove('fa-spin');
+                }, 500);
+            }
+        }
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NetBanking Login — SecureBank</title>
+    <link rel="stylesheet" href="../static/css/style.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+    <div class="auth-layout">
+        <!-- Left: Branding & Compliance Security Notes -->
+        <div class="auth-showcase">
+            <div class="showcase-content">
+                <div class="brand-logo">
+                    <div class="brand-icon">
+                        <i class="fa-solid fa-building-columns"></i>
+                    </div>
+                    <div class="brand-name">SECURE<span>BANK</span></div>
+                </div>
+
+                <h1 class="showcase-heading">Secure Banking Authentication</h1>
+                <p class="showcase-subtitle">
+                    Please provide your 6-digit Account Number and secret 4-digit Security PIN to access your account dashboard.
+                </p>
+
+                <div class="showcase-features">
+                    <div class="feature-item">
+                        <div class="feature-icon blue">
+                            <i class="fa-solid fa-key"></i>
+                        </div>
+                        <div class="feature-text">
+                            <strong>Confidential Credentials</strong>
+                            Never disclose your 4-digit PIN, OTP, or password to anyone, including bank representatives.
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon green">
+                            <i class="fa-solid fa-shield-virus"></i>
+                        </div>
+                        <div class="feature-text">
+                            <strong>Session Protection</strong>
+                            Active sessions are monitored and authenticated to prevent unauthorized access.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Login Form -->
+        <div class="auth-form-panel">
+            <div class="auth-form-container">
+                <div style="margin-bottom: 24px;">
+                    <a href="{{ url_for('index') }}" style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
+                        <i class="fa-solid fa-arrow-left"></i> Home
+                    </a>
+                    <h2 class="auth-form-title">NetBanking Login</h2>
+                    <p class="auth-form-subtitle">Enter your registered banking credentials</p>
+                </div>
+
+                <form id="loginForm" onsubmit="handleLoginSubmit(event)">
+                    <div class="form-group">
+                        <label class="form-label" for="loginAccNum">Account Number</label>
+                        <div style="position: relative;">
+                            <input 
+                                type="text" 
+                                id="loginAccNum" 
+                                class="form-input" 
+                                placeholder="e.g. 748291" 
+                                maxlength="6" 
+                                pattern="\d{6}" 
+                                required 
+                                autofocus
+                            >
+                            <i class="fa-solid fa-id-card" style="position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted);"></i>
+                        </div>
+                        <div class="form-hint">6-digit assigned account number</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="loginPin">4-Digit Security PIN</label>
+                        <div style="position: relative;">
+                            <input 
+                                type="password" 
+                                id="loginPin" 
+                                class="form-input mono" 
+                                placeholder="••••" 
+                                maxlength="4" 
+                                pattern="\d{4}" 
+                                required
+                            >
+                            <button type="button" onclick="togglePinVisibility('loginPin', this)" style="position: absolute; right: 14px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer;">
+                                <i class="fa-solid fa-eye"></i>
+                            </button>
+                        </div>
+                        <div class="form-hint">Authorized PIN set during registration</div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" id="loginSubmitBtn" style="margin-top: 12px; height: 46px;">
+                        <span id="loginBtnText"><i class="fa-solid fa-lock" style="margin-right: 6px;"></i> Sign In Securely</span>
+                        <div class="spinner" id="loginSpinner" style="display: none;"></div>
+                    </button>
+                </form>
+
+                <div class="auth-switch">
+                    Don't have an account yet? 
+                    <a href="{{ url_for('register_page') }}">Open New Account</a>
+                </div>
+
+                <!-- Instant Demo Testing Box -->
+                <div style="margin-top: 24px; padding: 14px; background: rgba(37, 99, 235, 0.05); border: 1px dashed var(--border-accent); border-radius: var(--radius-md);">
+                    <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--brand-accent-light); font-weight: 600; margin-bottom: 8px;">
+                        <i class="fa-solid fa-flask" style="margin-right: 4px;"></i> Demo Accounts for Testing
+                    </div>
+                    <div style="display: flex; gap: 8px; flex-direction: column;">
+                        <button type="button" class="btn btn-secondary" onclick="fillDemo(100001, '1234')" style="padding: 6px 10px; font-size: 12px; justify-content: space-between;">
+                            <span>Alexander (A/C: <strong class="mono">100001</strong>)</span>
+                            <span class="mono" style="color: var(--brand-gold);">PIN: 1234</span>
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="fillDemo(100002, '1234')" style="padding: 6px 10px; font-size: 12px; justify-content: space-between;">
+                            <span>Sophia (A/C: <strong class="mono">100002</strong>)</span>
+                            <span class="mono" style="color: var(--brand-gold);">PIN: 1234</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container" id="toastContainer"></div>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    <script>
+        async function handleLoginSubmit(e) {
+            e.preventDefault();
+            const accNum = document.getElementById('loginAccNum').value.trim();
+            const pin = document.getElementById('loginPin').value.trim();
+            const btn = document.getElementById('loginSubmitBtn');
+            const btnText = document.getElementById('loginBtnText');
+            const spinner = document.getElementById('loginSpinner');
+
+            if (accNum.length !== 6 || isNaN(accNum)) {
+                showToast('Please enter a valid 6-digit account number', 'error');
+                return;
+            }
+            if (pin.length !== 4 || isNaN(pin)) {
+                showToast('PIN must be exactly 4 numeric digits', 'error');
+                return;
+            }
+
+            btn.disabled = true;
+            btnText.style.display = 'none';
+            spinner.style.display = 'block';
+
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ account_number: accNum, pin: pin })
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    showToast('Authentication successful. Redirecting...', 'success');
+                    setTimeout(() => {
+                        window.location.href = '/dashboard';
+                    }, 600);
+                } else {
+                    showToast(data.message || 'Login failed. Verify account number and PIN.', 'error');
+                    btn.disabled = false;
+                    btnText.style.display = 'inline-flex';
+                    spinner.style.display = 'none';
+                }
+            } catch (err) {
+                showToast('Server connection error. Please try again.', 'error');
+                btn.disabled = false;
+                btnText.style.display = 'inline-flex';
+                spinner.style.display = 'none';
+            }
+        }
+
+        function togglePinVisibility(id, btn) {
+            const input = document.getElementById(id);
+            const icon = btn.querySelector('i');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+
+        function fillDemo(accNum, pin) {
+            document.getElementById('loginAccNum').value = accNum;
+            document.getElementById('loginPin').value = pin;
+            showToast(`Filled demo credentials for A/C #${accNum}`, 'info');
+        }
+    </script>
+</body>
+</html>
